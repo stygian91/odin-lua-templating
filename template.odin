@@ -27,7 +27,7 @@ Value :: union #no_nil {
 	b32,
 }
 
-TEMPLATE :: #load("./lua/template.lua", cstring)
+TEMPLATE :: #load("./lua/engine.lua", cstring)
 
 GLOBALS := [?]cstring{"pairs", "ipairs", "type", "table", "string", "math"}
 
