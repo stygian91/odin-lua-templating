@@ -4,17 +4,17 @@ import "core:slice"
 import lua "vendor:lua/5.4"
 
 Run_Error :: union {
-  Prepare_Error,
-  Execute_Error,
+	Prepare_Error,
+	Execute_Error,
 }
 
 Prepare_Error :: enum {
 	Load_Engine,
-  Global_Variable_Name_Conflict,
+	Global_Variable_Name_Conflict,
 }
 
 Execute_Error :: struct {
-  message: cstring
+	message: cstring,
 }
 
 Nil :: distinct struct {}
@@ -55,9 +55,9 @@ run :: proc(template: cstring, values: map[cstring]Value) -> (res: cstring, err:
 	lua.pop(L, 1)
 
 	for name, value in values {
-    if slice.contains(GLOBALS[:], name) {
-      return res, .Global_Variable_Name_Conflict
-    }
+		if slice.contains(GLOBALS[:], name) {
+			return res, .Global_Variable_Name_Conflict
+		}
 
 		switch v in value {
 		case Nil:
@@ -76,11 +76,11 @@ run :: proc(template: cstring, values: map[cstring]Value) -> (res: cstring, err:
 	}
 
 	if (lua.pcall(L, 2, lua.MULTRET, 0) != 0) {
-    message := lua.tostring(L, -1)
-    return res, Execute_Error{message}
-  }
+		message := lua.tostring(L, -1)
+		return res, Execute_Error{message}
+	}
 
-  res = lua.tostring(L, -1)
+	res = lua.tostring(L, -1)
 
-  return res, nil
+	return res, nil
 }
