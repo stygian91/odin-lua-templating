@@ -1,4 +1,4 @@
-package template
+package templating
 
 import "core:slice"
 import lua "vendor:lua/5.4"
