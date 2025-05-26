@@ -1,13 +1,13 @@
---- This code is from https://nachtimwald.com/2014/08/06/using-lua-as-a-templating-engine/
---- Code from John Schember's blog is licensed under MIT: https://nachtimwald.com/legal/
----
---- Template renderer.
+-- This code is from https://nachtimwald.com/2014/08/06/using-lua-as-a-templating-engine/
+-- Code from John Schember's blog is licensed under MIT: https://nachtimwald.com/legal/
+--
+-- Minimum supported lua version - 5.2
 --
 -- Takes a string with embedded Lua code and renders
 -- it based on the Lua code.
 --
---  All template blocks end with }}. Lua blocks start
---  with { + a modifier specifying the operation.
+-- All template blocks end with }}. Lua blocks start
+-- with { + a modifier specifying the operation.
 --
 -- Supports:
 --  * {{ var }} for printing variables.
@@ -24,7 +24,6 @@
 --  a level of sandboxing. Note that any globals including
 --  libraries that the template needs to access must be
 --  provided by env if used.
-
 local M = {}
 
 -- Append text or code to the builder.
