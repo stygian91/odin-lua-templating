@@ -112,7 +112,7 @@ function M.compile(tmpl, env)
             -- Find the end of the block.
             pos = tmpl:find("}}", b)
             if not pos then
-                appender(builder, "End tag ('}}') missing")
+                error("End tag ('}}') missing")
                 break
             end
             run_block(builder, tmpl:sub(b, pos + 2))
