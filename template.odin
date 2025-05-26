@@ -1,7 +1,7 @@
 package templating
 
-import "core:slice"
 import "core:c"
+import "core:slice"
 import lua "vendor:lua/5.4"
 
 Run_Error :: union {
@@ -25,14 +25,17 @@ Nil :: distinct struct {}
 Value :: union #no_nil {
 	Nil,
 	lua.Number,
-	lua.Integer,
+	int,
 	cstring,
 	b32,
 	map[cstring]Value,
+	[]Value,
 }
 
+@(private)
 TEMPLATE :: #load("./lua/engine.lua", cstring)
 
+@(private)
 GLOBALS := [?]cstring{"pairs", "ipairs", "type", "table", "string", "math"}
 
 run :: proc(template: cstring, values: map[cstring]Value) -> (res: cstring, err: Run_Error) {
@@ -82,8 +85,8 @@ _add_values :: proc(L: ^lua.State, values: map[cstring]Value) -> (err: Run_Error
 			lua.pushnil(L)
 		case lua.Number:
 			lua.pushnumber(L, v)
-		case lua.Integer:
-			lua.pushinteger(L, v)
+		case int:
+			lua.pushinteger(L, transmute(lua.Integer)v)
 		case cstring:
 			lua.pushstring(L, v)
 		case b32:
@@ -91,9 +94,40 @@ _add_values :: proc(L: ^lua.State, values: map[cstring]Value) -> (err: Run_Error
 		case map[cstring]Value:
 			lua.newtable(L)
 			_add_values(L, v) or_return
+		case []Value:
+			lua.newtable(L)
+			_add_array_values(L, v) or_return
 		}
 
 		lua.setfield(L, -2, name)
+	}
+
+	return nil
+}
+
+@(private)
+_add_array_values :: proc(L: ^lua.State, values: []Value) -> (err: Run_Error) {
+	for value, i in values {
+		switch v in value {
+		case Nil:
+			lua.pushnil(L)
+		case lua.Number:
+			lua.pushnumber(L, v)
+		case int:
+			lua.pushinteger(L, transmute(lua.Integer)v)
+		case cstring:
+			lua.pushstring(L, v)
+		case b32:
+			lua.pushboolean(L, v)
+		case map[cstring]Value:
+			lua.newtable(L)
+			_add_values(L, v) or_return
+		case []Value:
+			lua.newtable(L)
+			_add_array_values(L, v) or_return
+		}
+
+		lua.rawseti(L, -2, cast(lua.Integer)(i + 1))
 	}
 
 	return nil
