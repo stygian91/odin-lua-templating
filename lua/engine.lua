@@ -1,3 +1,6 @@
+--- This code is from https://nachtimwald.com/2014/08/06/using-lua-as-a-templating-engine/
+--- Code from John Schember's blog is licensed under MIT: https://nachtimwald.com/legal/
+---
 --- Template renderer.
 --
 -- Takes a string with embedded Lua code and renders

@@ -1,0 +1,11 @@
+# What?
+This is an Odin port of John Schember's small Lua template renderer, described in this article: https://nachtimwald.com/2014/08/06/using-lua-as-a-templating-engine/
+
+Supports:
+ * `{{ var }}` for printing variables.
+ * `{% func }}` for running Lua functions (and code blocks in general).
+
+Use `\{` to use a literal `{` in the template.
+
+Multi-line strings in Lua blocks are supported but
+ `[[` is not allowed. Use `[=[` or some other variation.
