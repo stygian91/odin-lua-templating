@@ -38,6 +38,7 @@ TEMPLATE :: #load("./lua/engine.lua", cstring)
 @(private)
 GLOBALS := [?]cstring{"pairs", "ipairs", "type", "table", "string", "math"}
 
+@(require_results)
 run :: proc(template: cstring, values: map[cstring]Value) -> (res: cstring, err: Run_Error) {
 	L := lua.L_newstate()
 	defer lua.close(L)
@@ -74,6 +75,7 @@ run :: proc(template: cstring, values: map[cstring]Value) -> (res: cstring, err:
 }
 
 @(private)
+@(require_results)
 _add_values :: proc(L: ^lua.State, values: map[cstring]Value) -> (err: Run_Error) {
 	for name, value in values {
 		if slice.contains(GLOBALS[:], name) {
@@ -106,6 +108,7 @@ _add_values :: proc(L: ^lua.State, values: map[cstring]Value) -> (err: Run_Error
 }
 
 @(private)
+@(require_results)
 _add_array_values :: proc(L: ^lua.State, values: []Value) -> (err: Run_Error) {
 	for value, i in values {
 		switch v in value {
