@@ -2,42 +2,12 @@ package templating
 
 import "base:runtime"
 import "core:c"
-import "core:fmt"
 import "core:os/os2"
-import "core:slice"
 import "core:strings"
 import lua "vendor:lua/5.4"
 
 Engine :: struct {
 	L: ^lua.State,
-}
-
-Run_Error :: union {
-	Load_Engine_Error,
-	Global_Name_Conflict_Error,
-	Execute_Error,
-}
-
-Load_Engine_Error :: distinct struct {}
-
-Global_Name_Conflict_Error :: struct {
-	name: cstring,
-}
-
-Execute_Error :: struct {
-	message: cstring,
-}
-
-Nil :: distinct struct {}
-
-Value :: union #no_nil {
-	Nil,
-	lua.Number,
-	int,
-	cstring,
-	b32,
-	map[cstring]Value,
-	[]Value,
 }
 
 @(private)
@@ -127,68 +97,6 @@ run :: proc(
 }
 
 @(private)
-@(require_results)
-_add_values :: proc(L: ^lua.State, values: map[cstring]Value) -> (err: Run_Error) {
-	for name, value in values {
-		if slice.contains(GLOBALS[:], name) || slice.contains(MANUAL_GLOBALS[:], name) {
-			return Global_Name_Conflict_Error{name}
-		}
-
-		switch v in value {
-		case Nil:
-			lua.pushnil(L)
-		case lua.Number:
-			lua.pushnumber(L, v)
-		case int:
-			lua.pushinteger(L, transmute(lua.Integer)v)
-		case cstring:
-			lua.pushstring(L, v)
-		case b32:
-			lua.pushboolean(L, v)
-		case map[cstring]Value:
-			lua.newtable(L)
-			_add_values(L, v) or_return
-		case []Value:
-			lua.newtable(L)
-			_add_array_values(L, v) or_return
-		}
-
-		lua.setfield(L, -2, name)
-	}
-
-	return nil
-}
-
-@(private)
-@(require_results)
-_add_array_values :: proc(L: ^lua.State, values: []Value) -> (err: Run_Error) {
-	for value, i in values {
-		switch v in value {
-		case Nil:
-			lua.pushnil(L)
-		case lua.Number:
-			lua.pushnumber(L, v)
-		case int:
-			lua.pushinteger(L, transmute(lua.Integer)v)
-		case cstring:
-			lua.pushstring(L, v)
-		case b32:
-			lua.pushboolean(L, v)
-		case map[cstring]Value:
-			lua.newtable(L)
-			_add_values(L, v) or_return
-		case []Value:
-			lua.newtable(L)
-			_add_array_values(L, v) or_return
-		}
-
-		lua.rawseti(L, -2, cast(lua.Integer)(i + 1))
-	}
-
-	return nil
-}
-
-@(private)
 _add_globals :: proc(L: ^lua.State) {
 	for name in GLOBALS {
 		lua.getglobal(L, name)
@@ -223,7 +131,6 @@ read_template :: proc "c" (L: ^lua.State) -> c.int {
 	template_dir := string(lua.tostring(L, -1))
 	lua.pop(L, 1)
 
-	// TODO: this path handling is a bit messy, maybe put it in a private function
 	joins_paths := [?]string{template_dir, path}
 	path_joined, join_err := os2.join_path(joins_paths[:], context.allocator)
 	if join_err != nil {
