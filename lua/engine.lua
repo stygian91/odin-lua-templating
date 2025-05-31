@@ -90,6 +90,28 @@ function M.compile(tmpl, env)
     local func
     local err
 
+    if type(env) ~= "table" then
+        env = {}
+    end
+
+    env["include"] = function (tmpl_path, data)
+        -- read_template is provided by Odin as a C function
+        local content = M.read_template(tmpl_path)
+        local new_data = {}
+
+        for k, v in pairs(env) do
+            new_data[k] = v
+        end
+
+        if type(data) == "table" then
+            for k, v in pairs(data) do
+                new_data[k] = v
+            end
+        end
+
+        return M.compile(content, new_data)
+    end
+
     if #tmpl == 0 then
         return ""
     end

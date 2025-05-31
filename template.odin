@@ -47,7 +47,7 @@ TEMPLATE :: #load("./lua/engine.lua", cstring)
 GLOBALS := [?]cstring{"pairs", "ipairs", "type", "table", "string", "math"}
 
 @(private)
-MANUAL_GLOBALS := [?]cstring{"date", "include"}
+MANUAL_GLOBALS := [?]cstring{"date"}
 
 @(private)
 CTX := runtime.default_context()
@@ -83,6 +83,8 @@ new_engine :: proc(template_dir: cstring) -> (engine: Engine, err: Run_Error) {
 		return engine, Load_Engine_Error{}
 	}
 
+	lua.pushcfunction(L, read_template)
+	lua.setfield(L, -2, "read_template")
 	lua.setfield(L, lua.REGISTRYINDEX, "engine")
 
 	return
@@ -197,27 +199,29 @@ _add_globals :: proc(L: ^lua.State) {
 	lua.getfield(L, -1, "date")
 	lua.setfield(L, -3, "date")
 	lua.pop(L, 1)
-
-	lua.pushcfunction(L, include)
-	lua.setfield(L, -2, "include")
 }
 
 @(private)
-include :: proc "c" (L: ^lua.State) -> c.int {
+_clean_stack :: proc(L: ^lua.State, size_before: c.int) {
+	size_after := lua.gettop(L)
+	size_diff := size_after - size_before
+	if size_diff > 0 {
+		lua.pop(L, size_diff)
+	}
+}
+
+@(private)
+read_template :: proc "c" (L: ^lua.State) -> c.int {
 	context = CTX
+
+	size: c.size_t
+	path_cstr := lua.L_checkstring(L, -1, &size)
+	path := string(path_cstr)
+	lua.pop(L, 1)
 
 	lua.getfield(L, lua.REGISTRYINDEX, "template_dir")
 	template_dir := string(lua.tostring(L, -1))
 	lua.pop(L, 1)
-
-	size: c.size_t
-	path_cstr := lua.L_checkstring(L, -2, &size)
-	path := string(path_cstr)
-
-	if !lua.istable(L, 2) {
-		lua.L_error(L, "expected second argument to be a table")
-		return 0
-	}
 
 	// TODO: this path handling is a bit messy, maybe put it in a private function
 	joins_paths := [?]string{template_dir, path}
@@ -260,53 +264,7 @@ include :: proc "c" (L: ^lua.State) -> c.int {
 	file_data_cstr := strings.clone_to_cstring(string(file_data), context.allocator)
 	defer delete(file_data_cstr)
 
-	lua.insert(L, -2)
-	lua.pop(L, 1)
-
-	lua.newtable(L)
-	_add_globals(L)
-	_shallow_merge(L, -2)
-
-	// put table at the top
-	lua.insert(L, -2)
-	lua.pop(L, 1)
-
-	// put file contents second
 	lua.pushstring(L, file_data_cstr)
-	lua.insert(L, -2)
-
-	// get the compile function and put it at the bottom
-	lua.getfield(L, lua.REGISTRYINDEX, "engine")
-	lua.getfield(L, -1, "compile")
-	lua.insert(L, -4)
-	// remove the engine module
-	lua.pop(L, 1)
-
-	if (lua.pcall(L, 2, lua.MULTRET, 0) != 0) {
-		message := lua.tostring(L, -1)
-		lua.L_error(L, message)
-		return 0
-	}
 
 	return 1
-}
-
-@(private)
-_clean_stack :: proc(L: ^lua.State, size_before: c.int) {
-	size_after := lua.gettop(L)
-	size_diff := size_after - size_before
-	if size_diff > 0 {
-		lua.pop(L, size_diff)
-	}
-}
-
-// Expects the destination table to be at the top
-@(private)
-_shallow_merge :: proc(L: ^lua.State, from_idx: c.int) {
-	lua.pushnil(L)
-	for lua.next(L, from_idx) != 0 {
-		lua.pushvalue(L, -2)
-		lua.insert(L, -2)
-		lua.settable(L, -4)
-	}
 }
