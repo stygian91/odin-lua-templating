@@ -84,7 +84,7 @@ run :: proc(
 
 	lua.newtable(L)
 	_add_globals(L)
-	_add_values(L, values) or_return
+	_add_values(L, values, true) or_return
 
 	if (lua.pcall(L, 2, lua.MULTRET, 0) != 0) {
 		message := lua.tostring(L, -1)

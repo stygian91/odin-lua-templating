@@ -17,9 +17,9 @@ Value :: union #no_nil {
 
 @(private)
 @(require_results)
-_add_values :: proc(L: ^lua.State, values: map[cstring]Value) -> (err: Run_Error) {
+_add_values :: proc(L: ^lua.State, values: map[cstring]Value, is_top := false) -> (err: Run_Error) {
 	for name, value in values {
-		if slice.contains(GLOBALS[:], name) || slice.contains(MANUAL_GLOBALS[:], name) {
+		if is_top && slice.contains(GLOBALS[:], name) || slice.contains(MANUAL_GLOBALS[:], name) {
 			return Global_Name_Conflict_Error{name}
 		}
 
